@@ -1,16 +1,13 @@
-# working_youtube_fixed.py
 import requests
-import json
-import os
-from typing import Dict, List, Optional
+from typing import Dict, List
+from datetime import datetime
+import re
 
 
-class YouTubeAPI:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv('AIzaSyD4OQJynLzAgh3u7ZHsiwQzzr7msKFh9ZI')
-        if not self.api_key:
-            raise ValueError("YouTube API key is required")
-
+class YoutubeClient:
+    def __init__(self, api_key: str, channel_uri: str):
+        self.api_key = api_key
+        self.channel_uri = channel_uri
         self.base_url = "https://www.googleapis.com/youtube/v3"
         self.session = requests.Session()
 
@@ -23,93 +20,174 @@ class YouTubeAPI:
             response = self.session.get(url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
-        except requests.exceptions.RequestException as e:
-            return {'error': f"API request failed: {str(e)}"}
+        except requests.exceptions.RequestException:
+            return {'error': 'API request failed'}
 
-    def _extract_video_id(self, url: str) -> str:
-        """Извлечение ID видео из URL"""
-        import re
+    def _get_channel_id_from_username(self, username: str) -> str:
+        """Получение channel_id из username (@username)"""
+        params = {
+            'part': 'id',
+            'forUsername': username
+        }
+
+        data = self._make_request('channels', params)
+
+        if 'error' in data or not data.get('items'):
+            return ""
+
+        return data['items'][0]['id']
+
+    def _extract_channel_id(self, channel_uri: str) -> str:
+        """Извлечение ID канала из URI"""
+        if channel_uri.startswith('UC') and len(channel_uri) == 24:
+            return channel_uri
+
+        if '@' in channel_uri:
+            username_match = re.search(r'@([a-zA-Z0-9_-]+)', channel_uri)
+            if username_match:
+                username = username_match.group(1)
+                return self._get_channel_id_from_username(username)
+
         patterns = [
-            r'(?:youtube\.com/watch\?v=|youtu\.be/)([^&?\s]+)',
-            r'youtube\.com/embed/([^&?\s]+)',
+            r'channel/([a-zA-Z0-9_-]{24})',
+            r'youtube\.com/channel/([a-zA-Z0-9_-]{24})',
         ]
 
         for pattern in patterns:
-            match = re.search(pattern, url)
+            match = re.search(pattern, channel_uri)
             if match:
                 return match.group(1)
-        return url  # Если передан чистый ID
 
-    def get_video_stats(self, video_identifier: str) -> Dict:
-        """Получение статистики видео"""
-        video_id = self._extract_video_id(video_identifier)
+        return ""
 
-        params = {
-            'part': 'statistics,snippet,contentDetails',
-            'id': video_id
-        }
+    def _extract_video_id(self, video_uri: str) -> str:
+        """Извлечение ID видео из URI"""
+        patterns = [
+            r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})',
+            r'youtube\.com/embed/([a-zA-Z0-9_-]{11})',
+        ]
 
-        data = self._make_request('videos', params)
+        for pattern in patterns:
+            match = re.search(pattern, video_uri)
+            if match:
+                return match.group(1)
+        return video_uri
 
-        if 'error' in data:
-            return data
-
-        if not data.get('items'):
-            return {'error': 'Video not found'}
-
-        video_data = data['items'][0]
-        statistics = video_data['statistics']
-        snippet = video_data['snippet']
-        content_details = video_data.get('contentDetails', {})
-
-        # Преобразуем числа, обрабатывая возможные ошибки
+    def _parse_datetime(self, datetime_str: str) -> datetime:
+        """Парсинг datetime из строки YouTube"""
         try:
-            views = int(statistics.get('viewCount', 0))
-        except (ValueError, TypeError):
-            views = 0
+            return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+        except:
+            return datetime.now()
 
-        try:
-            likes = int(statistics.get('likeCount', 0))
-        except (ValueError, TypeError):
-            likes = 0
+    def get_videos_info(self) -> List[Dict]:
+        """Получает канал и возвращает структуру по всем видео канала"""
+        channel_id = self._extract_channel_id(self.channel_uri)
+
+        if not channel_id:
+            return []
+
+        videos = []
+        next_page_token = None
 
         try:
-            comments = int(statistics.get('commentCount', 0))
-        except (ValueError, TypeError):
-            comments = 0
+            channel_params = {
+                'part': 'snippet',
+                'id': channel_id
+            }
 
-        result = {
-            'video_id': video_id,
-            'title': snippet.get('title', 'Unknown'),
-            'description': snippet.get('description', '')[:200],
-            'channel_title': snippet.get('channelTitle', 'Unknown'),
-            'published_at': snippet.get('publishedAt', 'Unknown'),
-            'duration': content_details.get('duration', 'Unknown'),
-            'views': views,
-            'likes': likes,
-            'comments': comments,
-        }
+            channel_data = self._make_request('channels', channel_params)
 
-        print(f"✅ Данные успешно получены: {result['title'][:50]}...")
-        return result
+            if 'error' in channel_data or not channel_data.get('items'):
+                return []
 
-    def get_video_comments(self, video_identifier: str, max_comments: int = 50) -> Dict:
-        """Получение комментариев к видео"""
-        video_id = self._extract_video_id(video_identifier)
+            while True:
+                params = {
+                    'part': 'id,snippet',
+                    'channelId': channel_id,
+                    'maxResults': 50,
+                    'order': 'date',
+                    'type': 'video'
+                }
 
-        print(f"💬 Загружаем комментарии для видео {video_id}...")
+                if next_page_token:
+                    params['pageToken'] = next_page_token
+
+                search_data = self._make_request('search', params)
+
+                if 'error' in search_data or not search_data.get('items'):
+                    break
+
+                video_ids = []
+                for item in search_data['items']:
+                    if 'videoId' in item['id']:
+                        video_ids.append(item['id']['videoId'])
+
+                if not video_ids:
+                    break
+
+                stats_params = {
+                    'part': 'statistics,snippet',
+                    'id': ','.join(video_ids)
+                }
+
+                videos_data = self._make_request('videos', stats_params)
+
+                if 'error' in videos_data or not videos_data.get('items'):
+                    break
+
+                for video_data in videos_data['items']:
+                    statistics = video_data.get('statistics', {})
+                    snippet = video_data.get('snippet', {})
+
+                    try:
+                        likes = int(statistics.get('likeCount', 0))
+                    except (ValueError, TypeError):
+                        likes = 0
+
+                    try:
+                        comment_count = int(statistics.get('commentCount', 0))
+                    except (ValueError, TypeError):
+                        comment_count = 0
+
+                    video_info = {
+                        'uri': f"https://www.youtube.com/watch?v={video_data['id']}",
+                        'likes': likes,
+                        'comment_count': comment_count,
+                        'text': snippet.get('title', ''),
+                        'publication_datetime': self._parse_datetime(snippet.get('publishedAt', ''))
+                    }
+                    videos.append(video_info)
+
+                next_page_token = search_data.get('nextPageToken')
+                if not next_page_token:
+                    break
+
+                import time
+                time.sleep(0.1)
+
+            return videos
+
+        except Exception:
+            return []
+
+    def get_comments_for_video(self, video_uri: str) -> List[Dict]:
+        """Получение комментариев для видео"""
+        video_id = self._extract_video_id(video_uri)
+
+        if not video_id or len(video_id) != 11:
+            return []
 
         comments = []
         next_page_token = None
 
         try:
-            while len(comments) < max_comments:
+            while True:
                 params = {
                     'part': 'snippet',
                     'videoId': video_id,
-                    'maxResults': min(100, max_comments - len(comments)),
-                    'textFormat': 'plainText',
-                    'order': 'relevance'
+                    'maxResults': 100,
+                    'textFormat': 'plainText'
                 }
 
                 if next_page_token:
@@ -118,10 +196,7 @@ class YouTubeAPI:
                 data = self._make_request('commentThreads', params)
 
                 if 'error' in data:
-                    error_msg = data['error']
-                    if 'comments disabled' in error_msg.lower():
-                        return {'error': 'Comments are disabled for this video', 'comments': [], 'total_count': 0}
-                    return data
+                    return comments
 
                 if not data.get('items'):
                     break
@@ -130,11 +205,8 @@ class YouTubeAPI:
                     comment_data = item['snippet']['topLevelComment']['snippet']
 
                     comment = {
-                        'id': item['id'],
-                        'author': comment_data.get('authorDisplayName', 'Unknown'),
                         'text': comment_data.get('textDisplay', ''),
-                        'likes': int(comment_data.get('likeCount', 0)),
-                        'published_at': comment_data.get('publishedAt', ''),
+                        'publication_datetime': self._parse_datetime(comment_data.get('publishedAt', ''))
                     }
                     comments.append(comment)
 
@@ -142,115 +214,21 @@ class YouTubeAPI:
                 if not next_page_token:
                     break
 
-                # Небольшая задержка между запросами
                 import time
                 time.sleep(0.1)
 
-            # Анализ комментариев
-            analysis = self._analyze_comments(comments)
+            return comments
 
-            return {
-                'comments': comments[:max_comments],
-                'total_count': len(comments),
-                'analysis': analysis,
-                'success': True
-            }
+        except Exception:
+            return []
 
-        except Exception as e:
-            return {'error': f"Unexpected error: {str(e)}", 'comments': [], 'total_count': 0}
+youtube = YoutubeClient("AIzaSyD4OQJynLzAgh3u7ZHsiwQzzr7msKFh9ZI", "https://www.youtube.com/@pognalishow")
 
-    def _analyze_comments(self, comments: List[Dict]) -> Dict:
-        """Анализ комментариев"""
-        if not comments:
-            return {
-                'total_comments': 0,
-                'average_length': 0,
-                'total_likes': 0,
-                'most_liked_comment': None,
-            }
+# Получение всех видео канала
+videos = youtube.get_videos_info()
 
-        total_chars = sum(len(comment.get('text', '')) for comment in comments)
-        total_likes = sum(comment.get('likes', 0) for comment in comments)
-        avg_length = total_chars / len(comments)
+# Получение комментариев для конкретного видео
+comments = youtube.get_comments_for_video("https://www.youtube.com/watch?v=UyaoBy3ETYI")
 
-        most_liked = max(comments, key=lambda x: x.get('likes', 0)) if comments else None
-
-        return {
-            'total_comments': len(comments),
-            'average_length': round(avg_length, 2),
-            'total_likes': total_likes,
-            'most_liked_comment': {
-                'author': most_liked.get('author', '') if most_liked else None,
-                'text': (most_liked.get('text', '')[:100] + '...') if most_liked else None,
-                'likes': most_liked.get('likes', 0) if most_liked else 0,
-            } if most_liked else None
-        }
-
-
-def main():
-
-    api_key = "AIzaSyD4OQJynLzAgh3u7ZHsiwQzzr7msKFh9ZI"
-
-    try:
-        youtube = YouTubeAPI(api_key)
-        print("✅ YouTube API инициализирован!")
-    except Exception as e:
-        print(f"❌ Ошибка: {e}")
-        return
-
-    # Тестовые запросы
-    test_videos = [
-        "https://www.youtube.com/watch?v=UyaoBy3ETYI",
-    ]
-
-    for video_url in test_videos:
-        print(f"\n{'=' * 60}")
-        print(f"🎬 Анализ: {video_url}")
-        print('=' * 60)
-
-        # Получаем статистику
-        print("📊 Получаем статистику...")
-        stats = youtube.get_video_stats(video_url)
-
-        if 'error' in stats:
-            print(f"❌ Ошибка: {stats['error']}")
-            continue
-
-        # Выводим статистику
-        print("✅ Статистика получена!")
-        print(f"\n📹 Заголовок: {stats['title']}")
-        print(f"👤 Канал: {stats['channel_title']}")
-        print(f"👁️  Просмотры: {stats['views']:,}")
-        print(f"👍  Лайки: {stats['likes']:,}")
-        print(f"💬 Комментарии: {stats['comments']:,}")
-
-        # Считаем engagement rate
-        if stats['views'] > 0:
-            engagement = (stats['likes'] / stats['views']) * 100
-            print(f"📈 Engagement Rate: {engagement:.4f}%")
-
-        # Получаем комментарии если они есть
-        if stats['comments'] > 0:
-            print(f"\n💬 Получаем комментарии...")
-            comments_data = youtube.get_video_comments(video_url, max_comments=100)
-
-            if 'error' in comments_data:
-                print(f"ℹ️  {comments_data['error']}")
-            else:
-                analysis = comments_data['analysis']
-                print(f"✅ Собрано комментариев: {analysis['total_comments']}")
-
-                if comments_data['comments']:
-                    print(f"\n📝 Примеры комментариев:")
-                    for i, comment in enumerate(comments_data['comments'][:3], 1):
-                        print(f"   {i}. 👤 {comment['author']} ({comment['likes']} ❤️)")
-                        print(f"      💬 {comment['text'][:80]}...")
-        else:
-            print(f"\n💬 У видео нет комментариев")
-
-        print(f"\n✅ Анализ завершен для {stats['video_id']}")
-
-
-if __name__ == "__main__":
-    # Запускаем основную демонстрацию
-    main()
+print(videos)
+print(comments)
