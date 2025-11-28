@@ -6,19 +6,22 @@ import time
 from telethon import TelegramClient
 from telethon.tl.functions.messages import GetHistoryRequest
 import getpass
+TELEGRAM_API_ID='38077916'
+TELEGRAM_API_HASH='9c78424b3151f2f677a54e55bb2f2512'
+
 
 
 class TelegramParser:
     def __init__(self, api_id, api_hash):
         self.api_id = api_id
         self.api_hash = api_hash
-        self.client = TelegramClient('tg_session', api_id, api_hash)
+        self.client = TelegramClient('tg_session', TELEGRAM_API_ID, TELEGRAM_API_HASH)
         self.is_authenticated = False
 
     async def authenticate(self):
         try:
             await self.client.start(
-                phone=lambda: input('📱 Введите номер телефона (с кодом страны): '),
+                phone=lambda: input(' Введите номер телефона (с кодом страны): '),
                 password=lambda: getpass.getpass(' Введите пароль 2FA (если установлен): '),
                 code_callback=lambda: input(' Введите код из Telegram: ')
             )
@@ -149,13 +152,10 @@ class TelegramParser:
 
 
 async def main():
-
-    API_ID = input("Введите API ID: ").strip()
-    API_HASH = input("Введите API Hash: ").strip()
     CHANNEL_URL = input("Введите ссылку на канал Telegram: ").strip()
 
 
-    parser = TelegramParser(int(API_ID), API_HASH)
+    parser = TelegramParser(int(TELEGRAM_API_ID), TELEGRAM_API_HASH)
 
     print(" Аутентификация в Telegram...")
     auth_result = await parser.authenticate()
@@ -307,9 +307,9 @@ def quick_check():
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print(" TELEGRAM PARSER")
-    print("=" * 60)
+
+    print("TELEGRAM PARSER")
+
 
 
     if not quick_check():
