@@ -4,19 +4,6 @@ from datetime import datetime
 import time
 import json
 
-'''
-class VKontakteClient(api, channel_uri):
-    def get_posts_info(self, access_token, version='5.131') -> list ([{'uri': '', 'likes': 2, 'comment_count':666, 'text': '', 'publication_datetime': datetime}]
-        self.access_token = access_token
-        self.version = version
-        self.base_url = 'https://api.vk.com/method/'
-    def get_comments_for_post(self, post_uri: str) -> list ({'text': '', 'publication_datetime': datetime})'''
-
-import requests
-import pandas as pd
-from datetime import datetime
-import time
-
 
 class VKontakteClient:
     def __init__(self, access_token: str, channel_uri: str, version: str = '5.131'):
@@ -135,16 +122,6 @@ class VKontakteClient:
         return all_posts
 
     def get_comments_for_post(self, post_uri: str) -> list:
-        """
-        Получает комментарии для конкретного поста
-
-        Args:
-            post_uri: URI поста
-
-        Returns:
-            list: Список словарей с информацией о комментариях в формате:
-                  [{'text': '', 'publication_datetime': datetime}]
-        """
         # Извлекаем post_id из URI
         try:
             # Формат URI: https://vk.com/wall-{group_id}_{post_id}
@@ -207,44 +184,13 @@ class VKontakteClient:
 
 
 def main():
-    # Настройки
-    ACCESS_TOKEN = '82672739826727398267273944815aab0e8826782672739eb4ec0e6a218285197132efa'
-    GROUP_URL = input("Введите ссылку на группу VK: ").strip()
-
-    try:
-        # Создаем клиент с нужным интерфейсом
-        client = VKontakteClient(ACCESS_TOKEN, GROUP_URL)
-
-        #print(f"✅ Клиент инициализирован для группы: {GROUP_URL}")
-
-        # Получаем информацию о постах (соответствует интерфейсу)
-        print("🔄 Получаем информацию о постах...")
-        posts = client.get_posts_info()
-
-        print(f"\n✅ Собрано {len(posts)} постов")
-
-        # Выводим статистику
-        if posts:
-            # Создаем DataFrame для удобства анализа
-            df = pd.DataFrame(posts)
-
-            print(f"\n📈 СТАТИСТИКА ГРУППЫ:")
-            print(f"   Всего постов: {len(posts)}")
-            print(f"   Средние показатели:")
-            print(f"   ❤️  Лайки: {df['likes'].mean():.1f}")
-            print(f"   💬 Комментарии: {df['comment_count'].mean():.1f}")
-
-            # Пример получения комментариев для первого поста
-            first_post_uri = posts[0]['uri']
-            print(f"\n🔄 Получаем комментарии для первого поста...")
-            comments = client.get_comments_for_post(first_post_uri)
-            print(f"✅ Получено {len(comments)} комментариев")
-
-        else:
-            print("❌ Не удалось собрать посты")
-
-    except Exception as e:
-        print(f"❌ Ошибка: {e}")
+    # Создаем клиент с нужным интерфейсом
+    client = VKontakteClient('82672739826727398267273944815aab0e8826782672739eb4ec0e6a218285197132efa', 'https://vk.com/rdrc_ru?from=groups')
+    # Получаем информацию о постах (соответствует интерфейсу)
+    posts = client.get_posts_info()
+    comments = client.get_comments_for_post('https://vk.com/wall-201387_1879471')
+    print(posts)
+    print(comments)
 
 
 if __name__ == "__main__":
