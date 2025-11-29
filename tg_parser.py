@@ -7,7 +7,7 @@ TELEGRAM_API_ID = "6276496"
 TELEGRAM_API_HASH = "5a2fd001f720903bd3d538e7b2c80cd3"
 
 
-class TgClient:
+class TelegramClient:
     def __init__(self, api_id: str, api_hash: str, channel_uri: str):
         self.api_id = api_id
         self.api_hash = api_hash
@@ -181,7 +181,7 @@ class TgClient:
 
 async def main():
     link = input("Введите ссылку: ")
-    client = TgClient(TELEGRAM_API_ID, TELEGRAM_API_HASH, link)
+    client = TelegramClient(TELEGRAM_API_ID, TELEGRAM_API_HASH, link)
     posts = await client.get_posts_info()
     print(f"Получено постов: {len(posts)}")
     print(posts)

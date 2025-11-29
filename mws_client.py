@@ -40,13 +40,13 @@ class MWSClient:
 
             record = {
                 "fields": {
-                    "Ссылка": {"title": "prikol", "text": row["uri"], "favicon": ""},
+                    "Ссылка": {"title": row["uri"], "text": row["uri"], "favicon": ""},
                     "Лайки": row["likes"],
                     "Комментарии": row["comment_count"],
                     "Пост": row["text"],
                     "Дата": pub_timestamp,
                     "Просмотры": row.get(
-                        "views", ""
+                        "views", None
                     ),  # Default value since it's not in input
                     "Название": row["text"][
                         :200
