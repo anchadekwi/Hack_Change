@@ -121,31 +121,44 @@ class VKontakteClient:
 
         return all_posts
 
-    def get_comments_for_post(self, post_uri: str) -> list:
-        # Извлекаем post_id из URI
+    def extract_post_ids(self, post_uri: str) -> tuple:
+
         try:
             # Формат URI: https://vk.com/wall-{group_id}_{post_id}
-            post_id = post_uri.split('_')[-1]
-            if not post_id.isdigit():
-                raise ValueError("Некорректный URI поста")
-        except (IndexError, ValueError) as e:
-            print(f"Ошибка извлечения post_id из URI: {e}")
+            if 'wall-' in post_uri:
+                wall_part = post_uri.split('wall-')[-1]
+                parts = wall_part.split('_')
+                if len(parts) == 2:
+                    group_id = abs(int(parts[0]))
+                    post_id = int(parts[1])
+                    return group_id, post_id
+            raise ValueError("Некорректный формат URI")
+        except Exception as e:
+            return None, None
+
+    def get_comments_from_post(self, post_uri: str, max_comments: int = 1000) -> list:
+
+        # Извлекаем ID группы и поста
+        group_id, post_id = self.extract_post_ids(post_uri)
+
+        if not group_id or not post_id:
             return []
 
-        comments_info = []
-        count = 1000000
+        comments_list = []
+        count = 100  # Количество комментариев за запрос
         offset = 0
 
-        while True:
+        while len(comments_list) < max_comments:
             try:
                 # Получаем комментарии пачками
                 method = 'wall.getComments'
                 params = {
-                    'owner_id': -self.group_id,
+                    'owner_id': -group_id,
                     'post_id': post_id,
                     'count': count,
                     'offset': offset,
                     'extended': 0,
+                    'need_likes': 0,
                     'access_token': self.access_token,
                     'v': self.version
                 }
@@ -153,42 +166,60 @@ class VKontakteClient:
                 response = requests.get(f"{self.base_url}{method}", params=params)
                 data = response.json()
 
+                # Проверяем ошибки
+                if 'error' in data:
+                    error = data['error']
+                    error_code = error.get('error_code')
+                    error_msg = error.get('error_msg')
+
+                    if error_code == 15:
+                        print(f"❌ Доступ запрещен: {error_msg}")
+                    elif error_code == 100:
+                        print(f"❌ Неверные параметры: {error_msg}")
+                    else:
+                        print(f"❌ Ошибка API: {error_msg}")
+                    break
+
+                # Проверяем наличие комментариев
                 if 'response' not in data or 'items' not in data['response']:
+                    print("ℹ️ Комментарии не найдены")
                     break
 
                 comments_data = data['response']['items']
 
-                # Парсим комментарии в нужный формат
+                if not comments_data:
+                    print("ℹ️ Больше нет комментариев")
+                    break
+
+
                 for comment in comments_data:
-                    comment_info = {
-                        'text': comment.get('text', ''),
-                        'publication_datetime': datetime.fromtimestamp(comment['date'])
-                    }
 
-                    comments_info.append(comment_info)
+                    comment_time = datetime.fromtimestamp(comment['date'])
+                    comment_text = comment.get('text', '').strip()
 
-                print(f"Получено {len(comments_data)} комментариев. Всего: {len(comments_info)}")
 
-                # Если получено меньше комментариев, значит больше нет
+                    if comment_text:
+                        comments_list.append({'text': comment_text, 'publication_datetime':comment_time})
+
+
                 if len(comments_data) < count:
                     break
 
                 offset += count
-                time.sleep(0.3)  # Задержка между запросами
+                time.sleep(0.3)
 
             except Exception as e:
-                print(f"Ошибка при получении комментариев: {e}")
                 break
 
-        return comments_info
+        return comments_list
 
 
 def main():
     # Создаем клиент с нужным интерфейсом
-    client = VKontakteClient('82672739826727398267273944815aab0e8826782672739eb4ec0e6a218285197132efa', 'https://vk.com/rdrc_ru?from=groups')
+    client = VKontakteClient('vk1.a.kIizzmzWeunee8CRKw3rwQkQ5KndhjWo1TAYZbbWPoRo2RUAS0gKW-y7jFKrvX3bCE7oOUdRHJxb95PrsW3jOVFs9PDvMJpkts3rqD0YRuJ6u73BoQgAwT-iydCDEyVkTTx_JI_GvRICI4cegamab_e-tRlhVAcDGOG_PCFz7CZVBCmygF4AtPlJIa9HSCdvUiVlFC4xHYc3V00qEhWf4A', 'https://vk.com/rdrc_ru?from=groups')
     # Получаем информацию о постах (соответствует интерфейсу)
     posts = client.get_posts_info()
-    comments = client.get_comments_for_post('https://vk.com/wall-201387_1879471')
+    comments = client.get_comments_from_post('https://vk.com/wall-69473024_124934')
     print(posts)
     print(comments)
 
