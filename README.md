@@ -40,15 +40,13 @@ OPENROUTER_API_KEY=your_key_here
 # 🏗 Архитектура проекта
 <pre><code id="codeBlock">
 Hack_Change/
-├── main.py                 # Основной запускаемый файл
-├── mws.py                  # Клиент MWS Tables API
-├── youtube.py              # YouTube Data API клиент
-├── test.py                 # Тесты и валидация
+├── pipeline.py             # Основной запускаемый файл
+├── mws_client.py           # Клиент MWS Tables API
+├── data_collector.py       # YouTube Data API клиент
+├── vk_parser.py            # VK Data API клиент
+├── tg_parser.py            # Tg Data API клиент
 ├── requirements.txt        # Зависимости Python
-├── Dockerfile             # Контейнеризация приложения
-├── static/                # Статические файлы (CSS, JS)
-├── templates/             # HTML шаблоны
-└── README.md              # Документация
+└── README.md               # Документация
 </code></pre>
 <button onclick="copyCode()">
 
