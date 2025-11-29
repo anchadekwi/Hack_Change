@@ -43,10 +43,15 @@ class MWSClient:
                     "Ссылка": {"title": "prikol", "text": row["uri"], "favicon": ""},
                     "Лайки": row["likes"],
                     "Комментарии": row["comment_count"],
-                    "Текст поста": row["text"],
+                    "Пост": row["text"],
                     "Дата": pub_timestamp,
-                    "Просмотры": 0,  # Default value since it's not in input
-                    "Пост": "[eq",  # Default value since it's not in input
+                    "Просмотры": row.get(
+                        "views", ""
+                    ),  # Default value since it's not in input
+                    "Название": row["text"][
+                        :200
+                    ],  # Default value since it's not in input
+                    "Соц. сеть": row["source"],
                 }
             }
             records.append(record)
@@ -63,19 +68,20 @@ class MWSClient:
         return response.json()
 
 
-print(
-    MWSClient(
-        "https://tables.mws.ru/fusion/v1/datasheets/dstEPg0bL9lD8jiDmt",
-        "uskPUFZhMwASVADEGwgI4XN",
-    ).insert_rows(
-        [
-            {
-                "uri": "xy",
-                "likes": 1,
-                "comment_count": 500,
-                "text": "qweqweqwe",
-                "publication_datetime": datetime(2025, 11, 11),
-            }
-        ]
+if __name__ == "__main__":
+    print(
+        MWSClient(
+            "https://tables.mws.ru/fusion/v1/datasheets/dstEPg0bL9lD8jiDmt",
+            "uskPUFZhMwASVADEGwgI4XN",
+        ).insert_rows(
+            [
+                {
+                    "uri": "xy",
+                    "likes": 1,
+                    "comment_count": 500,
+                    "text": "qweqweqwe",
+                    "publication_datetime": datetime(2025, 11, 11),
+                }
+            ]
+        )
     )
-)

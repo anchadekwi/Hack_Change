@@ -116,6 +116,7 @@ class TgClient:
                         "comment_count": comment_count,
                         "text": message.message,
                         "publication_datetime": post_date,
+                        "views": message.views,
                     }
 
                     posts_info.append(post_info)
