@@ -224,9 +224,9 @@ class YoutubeClient:
 
 # youtube = YoutubeClient("AIzaSyDIUvl2iJXBlDS0D1upZnb7azuzFfPq-hY", "https://www.youtube.com/@pognalishow")
 # #
-# # # # Получение всех видео канала
-# # # videos = youtube.get_videos_info()
-# # # print(videos)
+# # Получение всех видео канала
+# videos = youtube.get_videos_info()
+# print(videos[2])
 # # # Получение комментариев для конкретного видео
 # comments = youtube.get_comments_for_video("https://www.youtube.com/watch?v=UyaoBy3ETYI")
 # print(comments)

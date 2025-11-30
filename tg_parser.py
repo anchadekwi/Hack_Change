@@ -180,16 +180,13 @@ class TelegramClient:
             return []
 
 
-# async def main():
-#     link = input("Введите ссылку: ")
-#     client = TelegramClient(TELEGRAM_API_ID, TELEGRAM_API_HASH, link)
-#     posts = await client.get_posts_info()
-#     print(f"Получено постов: {len(posts)}")
-#     print(posts)
-#     if posts:
-#         comments = await client.get_comments_for_post(posts[0]["uri"])
-#         print(comments)
-#
-#
-# if __name__ == "__main__":
-#     asyncio.run(main())
+async def main():
+    link = 'https://t.me/the_ai_architect'
+    client = TelegramClient(TELEGRAM_API_ID, TELEGRAM_API_HASH, link)
+    posts = await client.get_posts_info()
+    print(f"Получено постов: {len(posts)}")
+    print(posts[2])
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -55,45 +55,45 @@ def main():
 
 
 # Дополнительный класс с расширенными функциями
-class AdvancedEmbedder(OpenRouterEmbedderClient):
-    def __init__(self, model_name: str, api_key: str):
-        super().__init__(model_name, api_key)
+# class AdvancedEmbedder(OpenRouterEmbedderClient):
+#     def __init__(self, model_name: str, api_key: str):
+#         super().__init__(model_name, api_key)
 
-    def cosine_similarity(self, text1: str, text2: str) -> float:
+#     def cosine_similarity(self, text1: str, text2: str) -> float:
 
-        emb1 = self.embed(text1)
-        emb2 = self.embed(text2)
+#         emb1 = self.embed(text1)
+#         emb2 = self.embed(text2)
 
-        if emb1.size == 0 or emb2.size == 0:
-            return 0.01
-        emb1_norm = emb1 / np.linalg.norm(emb1)
-        emb2_norm = emb2 / np.linalg.norm(emb2)
+#         if emb1.size == 0 or emb2.size == 0:
+#             return 0.01
+#         emb1_norm = emb1 / np.linalg.norm(emb1)
+#         emb2_norm = emb2 / np.linalg.norm(emb2)
 
-        similarity = np.dot(emb1_norm, emb2_norm)
-        return float(similarity)
+#         similarity = np.dot(emb1_norm, emb2_norm)
+#         return float(similarity)
 
-    def find_most_similar(self, query: str, texts: list) -> dict:
-        query_embedding = self.embed(query)
-        if query_embedding.size == 0:
-            return {"index": -1, "similarity": 0.0, "text": ""}
+#     def find_most_similar(self, query: str, texts: list) -> dict:
+#         query_embedding = self.embed(query)
+#         if query_embedding.size == 0:
+#             return {"index": -1, "similarity": 0.0, "text": ""}
 
-        similarities = []
-        for text in texts:
-            text_embedding = self.embed(text)
-            if text_embedding.size > 0:
-                query_norm = query_embedding / np.linalg.norm(query_embedding)
-                text_norm = text_embedding / np.linalg.norm(text_embedding)
-                similarity = np.dot(query_norm, text_norm)
-                similarities.append(similarity)
-            else:
-                similarities.append(0.0)
+#         similarities = []
+#         for text in texts:
+#             text_embedding = self.embed(text)
+#             if text_embedding.size > 0:
+#                 query_norm = query_embedding / np.linalg.norm(query_embedding)
+#                 text_norm = text_embedding / np.linalg.norm(text_embedding)
+#                 similarity = np.dot(query_norm, text_norm)
+#                 similarities.append(similarity)
+#             else:
+#                 similarities.append(0.0)
 
-        max_index = np.argmax(similarities)
-        return {
-            "index": max_index,
-            "similarity": float(similarities[max_index]),
-            "text": texts[max_index],
-        }
+#         max_index = np.argmax(similarities)
+#         return {
+#             "index": max_index,
+#             "similarity": float(similarities[max_index]),
+#             "text": texts[max_index],
+#         }
 
 
 # # Тестирование расширенного функционала
