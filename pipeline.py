@@ -22,12 +22,30 @@ async def main():
         "https://www.youtube.com/@RollAllDay",
     )
     await telegram_parser.authenticate()
+
+    existing_post_uris = mws_client.fetch_post_uris()
+
     posts_tg = await telegram_parser.get_posts_info()
     posts_vk = vk_parser.get_posts_info()
     posts_yt = yt_parser.get_videos_info()
-    mws_client.insert_rows([i | {"source": "Телеграм"} for i in posts_tg])
-    mws_client.insert_rows([i | {"source": "ВК"} for i in posts_vk])
-    mws_client.insert_rows([i | {"source": "Ютуб"} for i in posts_yt])
+    new_tg_rows = [
+        i | {"source": "Телеграм"}
+        for i in posts_tg
+        if i["uri"] not in existing_post_uris
+    ]
+    print("TG new rows:", len(new_tg_rows))
+    mws_client.insert_rows(new_tg_rows)
+    new_vk_rows = [
+        i | {"source": "ВК"} for i in posts_vk if i["uri"] not in existing_post_uris
+    ]
+    print("VK new rows:", len(new_vk_rows))
+    mws_client.insert_rows(new_vk_rows)
+
+    new_yt_rows = [
+        i | {"source": "Ютуб"} for i in posts_yt if i["uri"] not in existing_post_uris
+    ]
+    print("YT new rows:", len(new_yt_rows))
+    mws_client.insert_rows(new_yt_rows)
 
 
 if __name__ == "__main__":

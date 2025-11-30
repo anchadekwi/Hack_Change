@@ -67,6 +67,18 @@ class MWSClient:
         response.raise_for_status()
         return response.json()
 
+    def fetch_post_uris(self):
+        response = requests.get(
+            f"{self.base_url}/records?fieldKey=name&pageSize=1000", headers=self.headers
+        )
+        response.raise_for_status()
+
+        return [
+            i["fields"]["Ссылка"]["text"]
+            for i in response.json()["data"]["records"]
+            if "Ссылка" in i["fields"]
+        ]
+
 
 if __name__ == "__main__":
     print(
