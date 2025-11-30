@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from data_collector import YoutubeClient
+from llmclient import AdvancedEmbedder
 
 
 class MWSClient:

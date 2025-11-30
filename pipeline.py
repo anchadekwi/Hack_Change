@@ -3,6 +3,8 @@ from mws_client import MWSClient
 from tg_parser import TelegramClient
 from vk_parser import VKontakteClient
 from data_collector import YoutubeClient
+from llmclient import AdvancedEmbedder
+import chromadb
 
 posts_client = MWSClient(
     "https://tables.mws.ru/fusion/v1/datasheets/dstEPg0bL9lD8jiDmt",
@@ -14,6 +16,10 @@ updates_client = MWSClient(
     "uskPUFZhMwASVADEGwgI4XN",
     "",
 )
+API_KEY = "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"
+advanced_embedder = AdvancedEmbedder("text-embedding-ada-002", API_KEY)
+client = chromadb.Client()
+collection = client.get_or_create_collection(name="posts")
 
 
 async def main():
@@ -44,7 +50,6 @@ async def main():
     print("TG new rows:", len(new_tg_rows))
     posts_client.insert_rows(new_tg_rows)
     vk_rows = [i | {"source": "ВК"} for i in posts_vk if i["uri"]]
-    posts_client.insert_rows(new_tg_rows)
     new_vk_rows = [
         i | {"source": "ВК"} for i in posts_vk if i["uri"] not in existing_post_uris
     ]
@@ -52,8 +57,6 @@ async def main():
     posts_client.insert_rows(new_vk_rows)
 
     yt_rows = [i | {"source": "Ютуб"} for i in posts_yt if i["uri"]]
-    posts_client.insert_rows(new_vk_rows)
-
     new_yt_rows = [
         i | {"source": "Ютуб"} for i in posts_yt if i["uri"] not in existing_post_uris
     ]
@@ -64,7 +67,6 @@ async def main():
     updates_client.insert_updates(
         [i | {"timestamp": update_time} for i in tg_rows + vk_rows + yt_rows]
     )
-    posts_client.insert_rows(new_yt_rows)
 
     existing_comments_uris = posts_client.fetch_comments_uris()
 

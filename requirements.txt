@@ -1,3 +1,5 @@
 requests
 pandas
 telethon
+numpy
+chromadb
