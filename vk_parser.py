@@ -107,7 +107,7 @@ class VKontakteClient:
 
                     all_posts.append(post_info)
 
-                print(f"Получено {len(posts_data)} постов. Всего: {len(all_posts)}")
+                # print(f"Получено {len(posts_data)} постов. Всего: {len(all_posts)}")
 
                 # Если получено меньше запрошенного количества, значит посты закончились
                 if len(posts_data) < count:
@@ -199,7 +199,7 @@ class VKontakteClient:
 
                     if comment_text:
                         comments_list.append(
-                            {"text": comment_text, "publication_datetime": comment_time}
+                            {"text": comment_text, "publication_datetime": comment_time, 'uri': post_uri}
                         )
 
                 if len(comments_data) < count:
@@ -214,18 +214,18 @@ class VKontakteClient:
         return comments_list
 
 
-def main():
-    # Создаем клиент с нужным интерфейсом
-    client = VKontakteClient(
-        "vk1.a.kIizzmzWeunee8CRKw3rwQkQ5KndhjWo1TAYZbbWPoRo2RUAS0gKW-y7jFKrvX3bCE7oOUdRHJxb95PrsW3jOVFs9PDvMJpkts3rqD0YRuJ6u73BoQgAwT-iydCDEyVkTTx_JI_GvRICI4cegamab_e-tRlhVAcDGOG_PCFz7CZVBCmygF4AtPlJIa9HSCdvUiVlFC4xHYc3V00qEhWf4A",
-        "https://vk.com/rdrc_ru?from=groups",
-    )
-    # Получаем информацию о постах (соответствует интерфейсу)
-    posts = client.get_posts_info()
-    comments = client.get_comments_from_post("https://vk.com/wall-69473024_124934")
-    print(posts)
-    print(comments)
-
-
-if __name__ == "__main__":
-    main()
+# def main():
+#     # Создаем клиент с нужным интерфейсом
+#     client = VKontakteClient(
+#         "vk1.a.kIizzmzWeunee8CRKw3rwQkQ5KndhjWo1TAYZbbWPoRo2RUAS0gKW-y7jFKrvX3bCE7oOUdRHJxb95PrsW3jOVFs9PDvMJpkts3rqD0YRuJ6u73BoQgAwT-iydCDEyVkTTx_JI_GvRICI4cegamab_e-tRlhVAcDGOG_PCFz7CZVBCmygF4AtPlJIa9HSCdvUiVlFC4xHYc3V00qEhWf4A",
+#         "https://vk.com/rdrc_ru?from=groups",
+#     )
+#     # Получаем информацию о постах (соответствует интерфейсу)
+#     posts = client.get_posts_info()
+#     comments = client.get_comments_from_post("https://vk.com/wall-69473024_124934")
+#     print(posts)
+#     print(comments)
+#
+#
+# if __name__ == "__main__":
+#     main()
