@@ -102,3 +102,8 @@ pip install -r requirements.txt
 python3 pipeline.py
 ```
 Это скрипт экспорта данных в MWS. Рекомендуется запускать его по расписанию или в отдельном процессе
+
+# MWS
+Таблица с тестовыми данными:
+https://tables.mws.ru/invite/link?token=9245b0a225274ea4b9a4630b36960802 От MWS Tables: 79278543399 пригласил вас присоединиться к пространству "Реестр".
+https://tables.mws.ru/template/tpcprivate/tplYjhZvQmrRY
