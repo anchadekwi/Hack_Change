@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  pipeline-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./pipeline.py:/app/pipeline.py
+      - ./requirements.txt:/app/requirements.txt
+    restart: unless-stopped
+    command: >
+      sh -c "crontab -l | { cat; echo '*/15 * * * * cd /app && python pipeline.py'; } | crontab - &&
+      crond -f"
