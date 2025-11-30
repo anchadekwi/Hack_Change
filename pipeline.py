@@ -7,10 +7,12 @@ from data_collector import YoutubeClient
 posts_client = MWSClient(
     "https://tables.mws.ru/fusion/v1/datasheets/dstEPg0bL9lD8jiDmt",
     "uskPUFZhMwASVADEGwgI4XN",
+    "https://tables.mws.ru/fusion/v1/datasheets/dstCV00pr7W11osgz5",
 )
 updates_client = MWSClient(
     "https://tables.mws.ru/fusion/v1/datasheets/dstdjmo4zmkzdSyKTg",
     "uskPUFZhMwASVADEGwgI4XN",
+    "",
 )
 
 
@@ -42,6 +44,7 @@ async def main():
     print("TG new rows:", len(new_tg_rows))
     posts_client.insert_rows(new_tg_rows)
     vk_rows = [i | {"source": "ВК"} for i in posts_vk if i["uri"]]
+    posts_client.insert_rows(new_tg_rows)
     new_vk_rows = [
         i | {"source": "ВК"} for i in posts_vk if i["uri"] not in existing_post_uris
     ]
@@ -49,6 +52,8 @@ async def main():
     posts_client.insert_rows(new_vk_rows)
 
     yt_rows = [i | {"source": "Ютуб"} for i in posts_yt if i["uri"]]
+    posts_client.insert_rows(new_vk_rows)
+
     new_yt_rows = [
         i | {"source": "Ютуб"} for i in posts_yt if i["uri"] not in existing_post_uris
     ]
@@ -59,6 +64,42 @@ async def main():
     updates_client.insert_updates(
         [i | {"timestamp": update_time} for i in tg_rows + vk_rows + yt_rows]
     )
+    posts_client.insert_rows(new_yt_rows)
+
+    existing_comments_uris = posts_client.fetch_comments_uris()
+
+    comments_tg = await telegram_parser.get_comments_for_post(
+        "https://t.me/shucarz1337/771"
+    )
+    comments_vk = vk_parser.get_comments_from_post(
+        "https://vk.com/wall-69473024_124934"
+    )
+    comments_yt = yt_parser.get_comments_for_video(
+        "https://www.youtube.com/watch?v=UyaoBy3ETYI"
+    )
+
+    new_tg_rows = [
+        i | {"source": "Телеграм"}
+        for i in comments_tg
+        if i["text"] not in existing_comments_uris
+    ]
+    print("TG new comments:", len(new_tg_rows))
+    posts_client.insert_rows_for_comments(new_tg_rows)
+    new_vk_rows = [
+        i | {"source": "ВК"}
+        for i in comments_vk
+        if i["text"] not in existing_comments_uris
+    ]
+    print("VK new comments:", len(new_vk_rows))
+    posts_client.insert_rows_for_comments(new_vk_rows)
+
+    new_yt_rows = [
+        i | {"source": "Ютуб"}
+        for i in comments_yt
+        if i["text"] not in existing_comments_uris
+    ]
+    print("YT new comments:", len(new_yt_rows))
+    posts_client.insert_rows_for_comments(new_yt_rows)
 
 
 if __name__ == "__main__":

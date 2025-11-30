@@ -31,28 +31,18 @@ class YoutubeClient:
 
         return data["items"][0]["id"]
 
-    def _extract_channel_id(self, channel_uri: str) -> str:
-        """Извлечение ID канала из URI"""
-        if channel_uri.startswith("UC") and len(channel_uri) == 24:
-            return channel_uri
-
-        if "@" in channel_uri:
-            username_match = re.search(r"@([a-zA-Z0-9_-]+)", channel_uri)
-            if username_match:
-                username = username_match.group(1)
-                return self._get_channel_id_from_username(username)
-
+    def _extract_video_id(self, video_uri: str) -> str:
+        """Извлечение ID видео из URI"""
         patterns = [
-            r"channel/([a-zA-Z0-9_-]{24})",
-            r"youtube\.com/channel/([a-zA-Z0-9_-]{24})",
+            r'(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})',
+            r'youtube\.com/embed/([a-zA-Z0-9_-]{11})',
         ]
 
         for pattern in patterns:
-            match = re.search(pattern, channel_uri)
+            match = re.search(pattern, video_uri)
             if match:
                 return match.group(1)
-
-        return ""
+        return video_uri
 
     def _extract_channel_id(self, channel_uri: str) -> str:
         """Извлечение ID канала из URI с поддержкой @username"""
@@ -217,6 +207,7 @@ class YoutubeClient:
                     "publication_datetime": self._parse_datetime(
                         comment_data.get("publishedAt", "")
                     ),
+                    "uri": video_uri,
                 }
                 comments.append(comment)
 
@@ -231,10 +222,11 @@ class YoutubeClient:
         return comments
 
 
-# youtube = YoutubeClient("AIzaSyBB1nT_RE1FVHTvzcdF1e2FxBta7i7GFh8", "https://www.youtube.com/@pognalishow")
-
-# # Получение всех видео канала
-# videos = youtube.get_videos_info()
-# print(videos)
-# Получение комментариев для конкретного видео
+# youtube = YoutubeClient("AIzaSyDIUvl2iJXBlDS0D1upZnb7azuzFfPq-hY", "https://www.youtube.com/@pognalishow")
+# #
+# # # # Получение всех видео канала
+# # # videos = youtube.get_videos_info()
+# # # print(videos)
+# # # Получение комментариев для конкретного видео
 # comments = youtube.get_comments_for_video("https://www.youtube.com/watch?v=UyaoBy3ETYI")
+# print(comments)

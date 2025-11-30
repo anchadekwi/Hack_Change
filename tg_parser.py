@@ -51,9 +51,9 @@ class TelegramClient:
                 return False
 
             self.channel = entity
-            print(
-                f"Успешно подключено к официальному каналу: {entity.title} (@{entity.username})"
-            )
+            # print(
+            #     f"Успешно подключено к официальному каналу: {entity.title} (@{entity.username})"
+            # )
             return True
 
         except Exception as e:
@@ -169,6 +169,7 @@ class TelegramClient:
                     {
                         "text": comment.message.strip(),
                         "publication_datetime": comment_date,
+                        "uri": post_uri,
                     }
                 )
 
@@ -179,16 +180,16 @@ class TelegramClient:
             return []
 
 
-async def main():
-    link = input("Введите ссылку: ")
-    client = TelegramClient(TELEGRAM_API_ID, TELEGRAM_API_HASH, link)
-    posts = await client.get_posts_info()
-    print(f"Получено постов: {len(posts)}")
-    print(posts)
-    if posts:
-        comments = await client.get_comments_for_post(posts[0]["uri"])
-        print(comments)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+# async def main():
+#     link = input("Введите ссылку: ")
+#     client = TelegramClient(TELEGRAM_API_ID, TELEGRAM_API_HASH, link)
+#     posts = await client.get_posts_info()
+#     print(f"Получено постов: {len(posts)}")
+#     print(posts)
+#     if posts:
+#         comments = await client.get_comments_for_post(posts[0]["uri"])
+#         print(comments)
+#
+#
+# if __name__ == "__main__":
+#     asyncio.run(main())
