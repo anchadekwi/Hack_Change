@@ -67,17 +67,68 @@ class MWSClient:
         response.raise_for_status()
         return response.json()
 
-    def fetch_post_uris(self):
+    def fetch_uris(self):
         response = requests.get(
             f"{self.base_url}/records?fieldKey=name&pageSize=1000", headers=self.headers
         )
         response.raise_for_status()
 
-        return [
-            i["fields"]["Ссылка"]["text"]
+        return {
+            i["fields"]["Ссылка"]["text"]: i["recordId"]
             for i in response.json()["data"]["records"]
             if "Ссылка" in i["fields"]
-        ]
+        }
+
+    def delete_record(self, id):
+        response = requests.delete(
+            f"{self.base_url}/records?recordIds={id}",
+            headers={k: v for k, v in self.headers.items() if k != "Content-Type"},
+        )
+        response.raise_for_status()
+
+    def insert_updates(
+        self, rows: List[Dict[str, Any]], view_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Insert rows into the datasheet.
+
+        :param rows: List of dictionaries with the following keys:
+                     - 'uri' (str)
+                     - 'likes' (int)
+                     - 'comment_count' (int)
+                     - 'text' (str)
+                     - 'publication_datetime' (datetime)
+        :param view_id: Optional view ID to specify which view to use
+        :return: API response as a dictionary
+        """
+        records = []
+        for row in rows:
+            # Convert datetime to milliseconds timestamp
+            pub_timestamp = int(row["timestamp"].timestamp() * 1000)
+
+            record = {
+                "fields": {
+                    "Ссылка": {"title": row["uri"], "text": row["uri"], "favicon": ""},
+                    "Лайки": row["likes"],
+                    "Комментарии": row["comment_count"],
+                    "Дата": pub_timestamp,
+                    "Просмотры": row.get(
+                        "views", None
+                    ),  # Default value since it's not in input
+                }
+            }
+            records.append(record)
+
+        # Build URL
+        url = f"{self.base_url}/records"
+        if view_id:
+            url += f"?viewId={view_id}&fieldKey=name"
+
+        # Make API request
+        response = requests.post(url, headers=self.headers, json={"records": records})
+
+        response.raise_for_status()
+        return response.json()
 
 
 if __name__ == "__main__":
